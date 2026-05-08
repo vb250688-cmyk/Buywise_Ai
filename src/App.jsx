@@ -11,10 +11,10 @@ function PriceChart({ history }) {
   const range = max - min || 1
   const w = 600, h = 200, pad = 40
 
-  const points = history.map((h, i) => {
+  const points = history.map((item, i) => {
     const x = pad + (i / (history.length - 1)) * (w - pad * 2)
 
-    const y = pad + ((max - h.price) / range) * (h - pad * 2)
+const y = pad + ((max - item.price) / range) * (h - pad * 2)
   }).join(' ')
 
   return (
