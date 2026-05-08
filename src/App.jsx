@@ -13,8 +13,8 @@ function PriceChart({ history }) {
 
   const points = history.map((h, i) => {
     const x = pad + (i / (history.length - 1)) * (w - pad * 2)
-    const y = h + pad + ((max - h.price) / range) * (h - pad * 2)
-    return `${x},${y}`
+
+    const y = pad + ((max - h.price) / range) * (h - pad * 2)
   }).join(' ')
 
   return (
