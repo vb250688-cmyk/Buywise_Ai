@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
+const { chromium } = require('playwright');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -27,6 +29,111 @@ const Product = mongoose.model('Product', productSchema);
 app.get('/health', (req, res) => res.json({ status: 'OK', version: '2.0.0' }));
 app.get('/api/health', (req, res) => res.json({ status: '✅ API working', version: '2.0.0' }));
 
+// WEB SCRAPING FUNCTION
+async function getRealPrices(productName) {
+  const prices = {
+    amazon: 0,
+    flipkart: 0,
+    croma: 0
+  };
+
+  // AMAZON PRICE SCRAPING
+  try {
+    console.log('🔍 Scraping Amazon...');
+    const browser = await chromium.launch();
+    const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124');
+    
+    await page.goto(`https://www.amazon.in/s?k=${encodeURIComponent(productName)}`, { 
+      waitUntil: 'networkidle',
+      timeout: 30000 
+    });
+    
+    await page.waitForTimeout(2000);
+    
+    const price = await page.evaluate(() => {
+      const elements = document.querySelectorAll('span.a-price-whole');
+      if (elements.length > 0) {
+        const text = elements[0].textContent.replace(/[^0-9]/g, '');
+        return parseInt(text);
+      }
+      return 0;
+    });
+    
+    prices.amazon = price || 0;
+    console.log('✅ Amazon price:', prices.amazon);
+    await browser.close();
+  } catch(e) {
+    console.log('⚠️ Amazon scrape failed:', e.message);
+    prices.amazon = 0;
+  }
+
+  // FLIPKART PRICE SCRAPING
+  try {
+    console.log('🔍 Scraping Flipkart...');
+    const browser = await chromium.launch();
+    const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124');
+    
+    await page.goto(`https://www.flipkart.com/search?q=${encodeURIComponent(productName)}`, { 
+      waitUntil: 'networkidle',
+      timeout: 30000 
+    });
+    
+    await page.waitForTimeout(2000);
+    
+    const price = await page.evaluate(() => {
+      const elements = document.querySelectorAll('div._30jeq3._1_WHN1');
+      if (elements.length > 0) {
+        const text = elements[0].textContent.replace(/[^0-9]/g, '');
+        return parseInt(text);
+      }
+      return 0;
+    });
+    
+    prices.flipkart = price || 0;
+    console.log('✅ Flipkart price:', prices.flipkart);
+    await browser.close();
+  } catch(e) {
+    console.log('⚠️ Flipkart scrape failed:', e.message);
+    prices.flipkart = 0;
+  }
+
+  // CROMA PRICE SCRAPING
+  try {
+    console.log('🔍 Scraping Croma...');
+    const browser = await chromium.launch();
+    const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124');
+    
+    await page.goto(`https://www.croma.com/search/?q=${encodeURIComponent(productName)}`, { 
+      waitUntil: 'networkidle',
+      timeout: 30000 
+    });
+    
+    await page.waitForTimeout(2000);
+    
+    const price = await page.evaluate(() => {
+      const elements = document.querySelectorAll('span.amount');
+      if (elements.length > 0) {
+        const text = elements[0].textContent.replace(/[^0-9]/g, '');
+        return parseInt(text);
+      }
+      return 0;
+    });
+    
+    prices.croma = price || 0;
+    console.log('✅ Croma price:', prices.croma);
+    await browser.close();
+  } catch(e) {
+    console.log('⚠️ Croma scrape failed:', e.message);
+    prices.croma = 0;
+  }
+
+  console.log('Final prices:', prices);
+  return prices;
+}
+
 app.get('/api/products', async (req, res) => {
   try {
     const products = await Product.find().sort({ createdAt: -1 });
@@ -48,22 +155,42 @@ app.post('/api/products', async (req, res) => {
     else if (url.includes('blinkit')) name = 'Blinkit Product';
     else if (url.includes('myntra')) name = 'Myntra Product';
 
+    const tp = parseFloat(targetPrice);
+
+    // GET REAL PRICES FROM WEB SCRAPING
+    console.log('Starting real price scraping for:', name);
+    const priceData = await getRealPrices(name);
+
+    // PRICE HISTORY WITH REAL BASE PRICE
     const priceHistory = [];
-    const basePrice = parseFloat(targetPrice) * 1.2;
+    const basePrice = priceData.amazon > 0 ? priceData.amazon : tp * 1.2;
+    
     for (let i = 30; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
       priceHistory.push({
         date,
-      price: Math.round(basePrice + (Math.random() - 0.5) * 1.5 * basePrice)
+        price: Math.round(basePrice + (Math.random() - 0.5) * 1.5 * basePrice)
       });
     }
 
-    const tp = parseFloat(targetPrice);
+    // STORES WITH REAL PRICES (fallback to calculated if scraping fails)
     const stores = [
-      { store: 'Amazon', price: Math.round(tp * 1.1), url: 'https://amazon.in' },
-      { store: 'Flipkart', price: Math.round(tp * 1.05), url: 'https://flipkart.com' },
-      { store: 'Croma', price: Math.round(tp * 1.15), url: 'https://croma.com' },
+      { 
+        store: 'Amazon', 
+        price: priceData.amazon > 0 ? priceData.amazon : Math.round(tp * 1.1), 
+        url: 'https://amazon.in' 
+      },
+      { 
+        store: 'Flipkart', 
+        price: priceData.flipkart > 0 ? priceData.flipkart : Math.round(tp * 1.05), 
+        url: 'https://flipkart.com' 
+      },
+      { 
+        store: 'Croma', 
+        price: priceData.croma > 0 ? priceData.croma : Math.round(tp * 1.15), 
+        url: 'https://croma.com' 
+      },
       { store: 'BigBasket', price: Math.round(tp * 0.95), url: 'https://bigbasket.com' },
       { store: 'Blinkit', price: Math.round(tp * 1.0), url: 'https://blinkit.com' },
       { store: 'Myntra', price: Math.round(tp * 1.08), url: 'https://myntra.com' }
@@ -79,6 +206,7 @@ app.post('/api/products', async (req, res) => {
     await product.save();
     res.json({ success: true, product });
   } catch (err) {
+    console.log('Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
