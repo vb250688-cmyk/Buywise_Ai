@@ -1,0 +1,69 @@
+{
+  "products": [
+    {
+      "id": "iphone15",
+      "name": "iPhone 15",
+      "category": "smartphones",
+      "realPrices": {
+        "amazon": 79999,
+        "flipkart": 79499,
+        "croma": 79999,
+        "bigbasket": 80500,
+        "blinkit": 81000,
+        "myntra": 79999
+      }
+    },
+    {
+      "id": "samsung_s24",
+      "name": "Samsung Galaxy S24",
+      "category": "smartphones",
+      "realPrices": {
+        "amazon": 79999,
+        "flipkart": 78999,
+        "croma": 79499,
+        "bigbasket": 80000,
+        "blinkit": 81500,
+        "myntra": 79500
+      }
+    },
+    {
+      "id": "macbook_m3",
+      "name": "MacBook Pro M3",
+      "category": "laptops",
+      "realPrices": {
+        "amazon": 139999,
+        "flipkart": 138999,
+        "croma": 140000,
+        "bigbasket": 145000,
+        "blinkit": 149000,
+        "myntra": 141000
+      }
+    },
+    {
+      "id": "ipad_pro",
+      "name": "iPad Pro 12.9",
+      "category": "tablets",
+      "realPrices": {
+        "amazon": 129999,
+        "flipkart": 128999,
+        "croma": 129500,
+        "bigbasket": 132000,
+        "blinkit": 135000,
+        "myntra": 130500
+      }
+    },
+    {
+      "id": "airpods_pro",
+      "name": "AirPods Pro 2",
+      "category": "audio",
+      "realPrices": {
+        "amazon": 24990,
+        "flipkart": 24490,
+        "croma": 24999,
+        "bigbasket": 26000,
+        "blinkit": 27000,
+        "myntra": 25500
+      }
+    }
+  ]
+}
