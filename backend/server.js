@@ -55,7 +55,7 @@ app.post('/api/products', async (req, res) => {
       date.setDate(date.getDate() - i);
       priceHistory.push({
         date,
-        price: Math.round(basePrice + (Math.random() - 0.5) * 0.2 * basePrice)
+      price: Math.round(basePrice + (Math.random() - 0.5) * 1.5 * basePrice)
       });
     }
 
